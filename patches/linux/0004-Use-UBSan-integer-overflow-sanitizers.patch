@@ -1,0 +1,55 @@
+From 2c925a77f20adab9433fcc1f3475a3486832bf2d Mon Sep 17 00:00:00 2001
+From: qua3k <cliffmaceyak@gmail.com>
+Date: Sat, 22 Jan 2022 03:41:30 +0000
+Subject: [PATCH] Use UBSan integer overflow sanitizers
+
+---
+ build/config/sanitizers/BUILD.gn       | 13 +++++++++++++
+ build/config/sanitizers/sanitizers.gni |  3 +++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/build/config/sanitizers/BUILD.gn b/build/config/sanitizers/BUILD.gn
+index ef5f1369780fc..398293c16c5a7 100644
+--- a/build/config/sanitizers/BUILD.gn
++++ b/build/config/sanitizers/BUILD.gn
+@@ -173,6 +173,9 @@ config("default_sanitizer_ldflags") {
+     if (is_ubsan_null) {
+       ldflags += [ "-fsanitize=null" ]
+     }
++    if (is_ubsan_integer) {
++      ldflags += [ "-fsanitize=integer", "-fno-sanitize-recover=integer", "-fsanitize-minimal-runtime" ]
++    }
+     if (is_ubsan_vptr) {
+       ldflags += [ "-fsanitize=vptr" ]
+     }
+@@ -516,6 +519,16 @@ config("ubsan_vptr_flags") {
+   }
+ }
+ 
++config("ubsan_integer_flags") {
++  if (is_ubsan_integer) {
++    cflags = [
++      "-fsanitize=integer",
++      "-fno-sanitize-recover=integer",
++      "-fsanitize-minimal-runtime"
++    ]
++  }
++}
++
+ config("fuzzing_build_mode") {
+   if (use_fuzzing_engine && optimize_for_fuzzing) {
+     defines = [ "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION" ]
+diff --git a/build/config/sanitizers/sanitizers.gni b/build/config/sanitizers/sanitizers.gni
+index 2940bfc37f264..96d70ebf14954 100644
+--- a/build/config/sanitizers/sanitizers.gni
++++ b/build/config/sanitizers/sanitizers.gni
+@@ -37,6 +37,9 @@ declare_args() {
+   # Compile for Undefined Behaviour Sanitizer's null pointer checks.
+   is_ubsan_null = false
+ 
++  # Compile for Undefined Behavior Sanitizer's integer overflow checks.
++  is_ubsan_integer = true
++
+   # Track where uninitialized memory originates from. From fastest to slowest:
+   # 0 - no tracking, 1 - track only the initial allocation site, 2 - track the
+   # chain of stores leading from allocation site to use site.
